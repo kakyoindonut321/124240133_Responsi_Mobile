@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:responsi_124240133/models/game_model.dart';
 
 import '../models/game_model.dart';
 import '../services/library_service.dart';
@@ -14,22 +13,26 @@ class LibraryPage extends StatelessWidget {
     final LibraryService service = LibraryService();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Games')),
+      appBar: AppBar(title: const Text('Library')),
       body: ValueListenableBuilder<Box>(
         valueListenable: service.listenable,
         builder: (context, box, child) {
-          final List<GameModel> libraries = service.getLibrary();
+          final List<GameModel> games = service.getLibrary();
 
           // Kondisi kosong
-          if (libraries.isEmpty) {
+          if (games.isEmpty) {
             return const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.favorite_border, size: 48, color: Colors.grey),
+                  Icon(
+                    Icons.videogame_asset_outlined,
+                    size: 48,
+                    color: Colors.grey,
+                  ),
                   SizedBox(height: 8),
                   Text(
-                    'Belum ada library',
+                    'Library masih kosong',
                     style: TextStyle(color: Colors.grey),
                   ),
                 ],
@@ -39,9 +42,9 @@ class LibraryPage extends StatelessWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(12),
-            itemCount: libraries.length,
+            itemCount: games.length,
             itemBuilder: (context, index) {
-              final GameModel game = libraries[index];
+              final GameModel game = games[index];
 
               return Card(
                 color: Colors.grey[900],
@@ -59,20 +62,26 @@ class LibraryPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                     child: game.thumbnail == null
                         ? const SizedBox(
-                            width: 48,
-                            height: 64,
-                            child: Icon(Icons.movie, color: Colors.grey),
+                            width: 96,
+                            height: 54,
+                            child: Icon(
+                              Icons.videogame_asset,
+                              color: Colors.grey,
+                            ),
                           )
                         : Image.network(
                             game.thumbnail!,
-                            width: 48,
-                            height: 64,
+                            width: 96,
+                            height: 54,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
                                 const SizedBox(
-                                  width: 48,
-                                  height: 64,
-                                  child: Icon(Icons.movie, color: Colors.grey),
+                                  width: 96,
+                                  height: 54,
+                                  child: Icon(
+                                    Icons.videogame_asset,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                           ),
                   ),
@@ -81,12 +90,10 @@ class LibraryPage extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(game.genre),
-                    ],
+                  subtitle: Text(
+                    '${game.genre} • ${game.platform}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),

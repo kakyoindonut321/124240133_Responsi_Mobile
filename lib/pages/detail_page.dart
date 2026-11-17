@@ -15,7 +15,7 @@ class DetailPage extends StatefulWidget {
 
 class _DetailPageState extends State<DetailPage> {
   final GameService _service = GameService();
-  final LibraryService _favorites = LibraryService();
+  final LibraryService _library = LibraryService();
   late Future<GameModel> _futureGame;
 
   @override
@@ -31,7 +31,7 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   Future<void> _toggleLibrary(GameModel game) async {
-    final bool nowFavorite = await _favorites.toggleLibrary(game);
+    final bool nowInLibrary = await _library.toggleLibrary(game);
 
     if (!mounted) return;
 
@@ -40,9 +40,9 @@ class _DetailPageState extends State<DetailPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          nowFavorite
-              ? '${game.title} ditambahkan ke favorit'
-              : '${game.title} dihapus dari favorit',
+          nowInLibrary
+              ? '${game.title} ditambahkan ke library'
+              : '${game.title} dihapus dari library',
         ),
         duration: const Duration(seconds: 1),
       ),
@@ -61,6 +61,8 @@ class _DetailPageState extends State<DetailPage> {
           }
 
           if (snapshot.hasError || !snapshot.hasData) {
+            debugPrint('DetailPage Error: ${snapshot.error}');
+
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -79,30 +81,14 @@ class _DetailPageState extends State<DetailPage> {
           }
 
           final GameModel game = snapshot.data!;
-          final bool isFavorite = _favorites.isLibrary(game.id);
+          final bool inLibrary = _library.isLibrary(game.id);
 
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Gambar
-                if (game.thumbnail != null)
-                  Image.network(
-                    game.thumbnail!,
-                    width: double.infinity,
-                    height: 400,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox(
-                          height: 400,
-                          child: Center(child: Icon(Icons.movie, size: 64)),
-                        ),
-                  )
-                else
-                  const SizedBox(
-                    height: 400,
-                    child: Center(child: Icon(Icons.movie, size: 64)),
-                  ),
+                // Thumbnail
+                _buildThumbnail(game),
 
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -117,35 +103,37 @@ class _DetailPageState extends State<DetailPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
 
-                      // Rating
-                      Row(
+                      // Genre & platform
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          const Icon(Icons.star, size: 18, color: Colors.amber),
-                          const SizedBox(width: 4),
-                          Text(game.genre),
+                          Chip(
+                            avatar: const Icon(Icons.category, size: 16),
+                            label: Text(game.genre),
+                          ),
+                          Chip(
+                            avatar: const Icon(Icons.computer, size: 16),
+                            label: Text(game.platform),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
 
-                      // Genre
-                      // Text(
-                      //   game.genres.isEmpty ? '-' : game.genres.join(', '),
-                      //   style: const TextStyle(color: Colors.grey),
-                      // ),
-                      const SizedBox(height: 16),
-
-                      // Tombol favorit
+                      // Tombol library
                       ElevatedButton.icon(
                         onPressed: () => _toggleLibrary(game),
                         icon: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          inLibrary
+                              ? Icons.bookmark_remove
+                              : Icons.bookmark_add_outlined,
                         ),
                         label: Text(
-                          isFavorite
-                              ? 'Hapus dari Favorit'
-                              : 'Tambah ke Favorit',
+                          inLibrary
+                              ? 'Hapus dari Library'
+                              : 'Tambah ke Library',
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context)
@@ -157,21 +145,69 @@ class _DetailPageState extends State<DetailPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Summary
-                      const Text(
-                        'Overview',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      // Informasi
+                      _sectionTitle('Informasi'),
+                      const SizedBox(height: 8),
+                      _infoRow('Publisher', game.publisher),
+                      _infoRow('Developer', game.developer),
+                      _infoRow('Rilis', game.release_date),
+                      const SizedBox(height: 20),
+
+                      // Overview
+                      _sectionTitle('Overview'),
                       const SizedBox(height: 6),
                       Text(
                         game.description.isEmpty
-                            ? 'Tidak ada ringkasan.'
+                            ? 'Tidak ada deskripsi.'
                             : game.description,
                         style: const TextStyle(fontSize: 13, height: 1.4),
                       ),
+
+                      // Screenshots
+                      if (game.screenshots.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        _sectionTitle('Screenshots'),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 130,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: game.screenshots.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  game.screenshots[index],
+                                  height: 130,
+                                  width: 220,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const SizedBox(
+                                    width: 220,
+                                    height: 130,
+                                    child: Center(
+                                      child: Icon(Icons.broken_image),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+
+                      // System requirements
+                      const SizedBox(height: 20),
+                      _sectionTitle('Minimum System Requirements'),
+                      const SizedBox(height: 8),
+                      if (game.minimum_system_requirements.isEmpty)
+                        const Text(
+                          'Tidak ada data.',
+                          style: TextStyle(color: Colors.grey),
+                        )
+                      else
+                        ..._buildRequirements(game.minimum_system_requirements),
                     ],
                   ),
                 ),
@@ -181,5 +217,62 @@ class _DetailPageState extends State<DetailPage> {
         },
       ),
     );
+  }
+
+  Widget _buildThumbnail(GameModel game) {
+    const placeholder = AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Center(child: Icon(Icons.videogame_asset, size: 64)),
+    );
+
+    if (game.thumbnail == null) return placeholder;
+
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Image.network(
+        game.thumbnail!,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => placeholder,
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildRequirements(Map<String, dynamic> req) {
+    const labels = {
+      'os': 'OS',
+      'processor': 'Processor',
+      'memory': 'Memory',
+      'graphics': 'Graphics',
+      'storage': 'Storage',
+    };
+
+    return req.entries
+        .where((e) => e.value != null && e.value.toString().isNotEmpty)
+        .map((e) => _infoRow(labels[e.key] ?? e.key, e.value.toString()))
+        .toList();
   }
 }

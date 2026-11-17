@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.movie, size: 64, color: accent),
+              Icon(Icons.videogame_asset, size: 64, color: accent),
               const SizedBox(height: 12),
               const Text(
                 'Hydra Games',

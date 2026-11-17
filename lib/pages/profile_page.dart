@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
+import '../services/library_service.dart';
 import '../services/session_service.dart';
 import 'login_page.dart';
 
@@ -12,6 +14,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final SessionService _session = SessionService();
+  final LibraryService _library = LibraryService();
   late Future<String> _futureEmail;
 
   @override
@@ -64,19 +67,40 @@ class _ProfilePageState extends State<ProfilePage> {
                   );
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
-              // Kesan & pesan (isi sendiri ya)
-              const Text(
-                'Kesan: Lebih forgiving dibanding teori.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Pesan: Makasih kak udh bikin kelasnya menyenangkan',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+              // Jumlah game di library (dinamis dari Hive)
+              ValueListenableBuilder<Box>(
+                valueListenable: _library.listenable,
+                builder: (context, box, child) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${box.length}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Game di Library',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 28),
 

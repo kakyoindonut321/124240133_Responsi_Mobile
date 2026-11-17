@@ -14,6 +14,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GameService _service = GameService();
+
   late Future<List<GameModel>> _futureGames;
 
   @override
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
     _futureGames = _service.fetchGames();
   }
 
+  // Retry fetching games.
   void _retry() {
     setState(() {
       _futureGames = _service.fetchGames();
@@ -35,13 +37,16 @@ class _HomePageState extends State<HomePage> {
       body: FutureBuilder<List<GameModel>>(
         future: _futureGames,
         builder: (context, snapshot) {
-          // 1. Masih loading
+          // 1. Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
           // 2. Error
           if (snapshot.hasError) {
+            debugPrint('HomePage Error: ${snapshot.error}');
+            debugPrintStack(stackTrace: snapshot.stackTrace);
+
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -59,8 +64,24 @@ class _HomePageState extends State<HomePage> {
             );
           }
 
-          // 3. Sukses
+          // 3. Success
           final List<GameModel> games = snapshot.data ?? [];
+
+          if (games.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Tidak ada game ditemukan'),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _retry,
+                    child: const Text('Muat ulang'),
+                  ),
+                ],
+              ),
+            );
+          }
 
           return GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -73,6 +94,7 @@ class _HomePageState extends State<HomePage> {
             itemCount: games.length,
             itemBuilder: (context, index) {
               final GameModel game = games[index];
+
               return GameCard(
                 game: game,
                 onTap: () {
